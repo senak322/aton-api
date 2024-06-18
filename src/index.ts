@@ -18,8 +18,6 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 
-
-
 mongoose
   .connect(process.env.MONGO_URI || url, {
     useNewUrlParser: true,
