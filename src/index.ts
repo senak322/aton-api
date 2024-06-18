@@ -5,6 +5,8 @@ import userRoutes from "./routes/userRoutes";
 import clientRoutes from "./routes/clientRoutes";
 import { config } from "dotenv";
 
+const url = "mongodb://127.0.0.1:27017/aton";
+
 config();
 
 const app = express();
@@ -16,8 +18,10 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 
+
+
 mongoose
-  .connect(process.env.MONGO_URI!, {
+  .connect(process.env.MONGO_URI || url, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   } as any)
