@@ -1,29 +1,39 @@
 import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";
+import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes";
 import clientRoutes from "./routes/clientRoutes";
-import { config } from "dotenv";
+import cors from "cors";
+import { main as synthesizeData } from "./scripts/synthesizeData";
 
-const url = "mongodb://127.0.0.1:27017/aton";
-
-config();
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-app.use(cors());
 app.use(express.json());
+app.use(cors());
+
+const PORT = process.env.PORT || 5000;
 
 app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 
-mongoose
-  .connect(process.env.MONGO_URI || url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  } as any)
-  .then(() =>
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
-  )
-  .catch((error) => console.log(`${error} did not connect`));
+const startServer = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI!, {
+     
+    });
+    console.log("MongoDB connected");
+
+    await synthesizeData(); // вызываем функцию синтеза данных
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error: any) {
+    console.error("Error starting server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

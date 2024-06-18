@@ -1,16 +1,31 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 export const registerUser = async (req: Request, res: Response) => {
   const { fullName, login, password } = req.body;
 
   try {
-    const user = new User({ fullName, login, password });
-    await user.save();
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    const existingUser = await User.findOne({ login });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = new User({ fullName, login, password: hashedPassword });
+    await newUser.save();
+
+    const token = jwt.sign(
+      { userId: newUser.id, fullName: newUser.fullName },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1h" }
+    );
+
+    res.status(201).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
 
@@ -19,7 +34,15 @@ export const loginUser = async (req: Request, res: Response) => {
 
   try {
     const user = await User.findOne({ login });
-    if (!user || !(await user.comparePassword(password))) {
+    console.log(user);
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    const isPasswordValid = await user.comparePassword(password);
+    // console.log(isPasswordValid);
+
+    if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -28,6 +51,9 @@ export const loginUser = async (req: Request, res: Response) => {
     });
     res.status(200).json({ token });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    if (!error.statusCode) {
+      error.statusCode = 500;
+    }
+    res.status(error.statusCode).json({ message: error.message });
   }
 };

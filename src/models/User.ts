@@ -14,16 +14,18 @@ const userSchema = new Schema<UserDocument>({
   password: { type: String, required: true },
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ) {
-  return bcrypt.compare(candidatePassword, this.password);
+  if (!candidatePassword || !this.password) {
+    throw new Error("Missing candidatePassword or password");
+  }
+
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error("Error comparing passwords");
+  }
 };
 
 export const User = model<UserDocument>("User", userSchema);
